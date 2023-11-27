@@ -8,6 +8,7 @@ using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using Restaurante.Migrations;
+using System.Security.Cryptography;
 
 namespace Restaurante.Controllers;
 
@@ -38,7 +39,27 @@ public class UserController : ControllerBase
     {
         if (validaUser(userDto, out string erro))
         {
-            var food = SaveHistory(userDto);
+            byte[] salt = new byte[16];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(salt);
+            }
+
+            string senhaCriptografada = HashSenhaComBcrypt(userDto.Senha, salt);
+
+            User user = new User
+            {
+                Nome = userDto.Nome,
+                CNPJ = userDto.CNPJ,
+                Email = userDto.Email,
+                Senha = senhaCriptografada,
+                TipoUser = userDto.TipoCliente,
+                Telefone = userDto.Telefone,
+                PasswordHash = Convert.ToBase64String(salt)
+            };
+
+            _context.Users.Add(user);
+            _context.SaveChanges();
             return Ok();
         }
         return BadRequest(erro);
@@ -105,6 +126,9 @@ public class UserController : ControllerBase
         if (user == null)
             return false;
 
+        byte[] saltBytes = Convert.FromBase64String(user.PasswordHash);
+        string senhaCriptografada = HashSenhaComBcrypt(senha, saltBytes);
+
         tipoUser = user.TipoUser;
         idUser = user.Id;
 
@@ -146,6 +170,7 @@ public class UserController : ControllerBase
 
     private User SaveHistory(UserDto userDto)
     {
+
         User user = new User();
 
         user.Nome = userDto.Nome;
@@ -158,6 +183,18 @@ public class UserController : ControllerBase
         _context.Users.Add(user);
         _context.SaveChanges();
         return user;
+    }
+
+
+    private string HashSenhaComBcrypt(string senha, byte[] salt)
+    {
+        // Configurações do Bcrypt (custo de trabalho)
+        const int custoTrabalho = 12;
+
+        // Use a função HashPassword do Bcrypt para gerar o hash da senha
+        string hashedSenha = BCrypt.Net.BCrypt.HashPassword(senha, BCrypt.Net.BCrypt.GenerateSalt(custoTrabalho));
+
+        return hashedSenha;
     }
 
     [HttpGet]
@@ -185,13 +222,16 @@ public class UserController : ControllerBase
 
     [HttpPut("{id}")]
     public IActionResult AtualizaUser(int id,
-        [FromBody] UserDto foodDto)
+        [FromBody] UserDto userDto)
     {
-        var food = _context.Users.FirstOrDefault(
-            food => food.Id == id);
-        if (food == null) return NotFound();
+        var user = _context.Users.FirstOrDefault(
+            p => p.Id == id);
+        if (user == null) return NotFound();
 
-        SaveHistory(foodDto);
+        byte[] saltBytes = Convert.FromBase64String(user.PasswordHash);
+        userDto.Senha = HashSenhaComBcrypt(userDto.Senha, saltBytes);
+
+        SaveHistory(userDto);
         return NoContent();
     }
 
