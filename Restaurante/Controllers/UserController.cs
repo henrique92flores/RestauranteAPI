@@ -9,6 +9,8 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using Restaurante.Migrations;
 using System.Security.Cryptography;
+using BCrypt.Net;
+using System.Data.SqlTypes;
 
 namespace Restaurante.Controllers;
 
@@ -126,14 +128,14 @@ public class UserController : ControllerBase
         if (user == null)
             return false;
 
-        byte[] saltBytes = Convert.FromBase64String(user.PasswordHash);
-        string senhaCriptografada = HashSenhaComBcrypt(senha, saltBytes);
-
         tipoUser = user.TipoUser;
         idUser = user.Id;
 
-        if (user.Senha == senha)
+        if (BCrypt.Net.BCrypt.Verify(senha, user.Senha))
+        {
             return true;
+        }
+
         return false;
     }
 
@@ -158,15 +160,6 @@ public class UserController : ControllerBase
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private bool LogaUser(UserDto userDto)
-    {
-        var user = _context.Users.FirstOrDefault(food => food.Email == userDto.Email); ;
-        if (user == null)
-            return false;
-        if (user.PasswordHash == userDto.Senha)
-            return true;
-        return false;
-    }
 
     private User SaveHistory(UserDto userDto)
     {
@@ -188,10 +181,8 @@ public class UserController : ControllerBase
 
     private string HashSenhaComBcrypt(string senha, byte[] salt)
     {
-        // Configurações do Bcrypt (custo de trabalho)
         const int custoTrabalho = 12;
 
-        // Use a função HashPassword do Bcrypt para gerar o hash da senha
         string hashedSenha = BCrypt.Net.BCrypt.HashPassword(senha, BCrypt.Net.BCrypt.GenerateSalt(custoTrabalho));
 
         return hashedSenha;

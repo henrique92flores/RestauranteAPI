@@ -6,6 +6,7 @@ using Restaurante.Data.DTOs;
 using Restaurante.Data.DTOs.Enum;
 using Restaurante.Data.DTOs.Food;
 using Restaurante.Data.DTOs.Restaurant;
+using Restaurante.Model;
 
 namespace Restaurante.Controllers
 {
@@ -42,6 +43,20 @@ namespace Restaurante.Controllers
             }
 
             return listaDto;
+        }
+        [HttpGet("{id}")]
+        public IActionResult RecuperaPorTagId(int id)
+        {
+            var tag = _context.Tags.FirstOrDefault(p => p.Id == id);
+            if (tag == null) return NotFound();
+
+            TagDto tagDto = new TagDto();
+
+
+            tagDto.Id = tag.Id;
+            tagDto.Descricao = tag.Descricao;
+
+            return Ok(tagDto);
         }
     }
 }

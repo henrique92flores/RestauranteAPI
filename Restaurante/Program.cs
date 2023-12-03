@@ -42,22 +42,26 @@ builder.Services.AddEndpointsApiExplorer();
 //    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
 //    c.IncludeXmlComments(xmlPath);
 //});
-builder.Services.AddSwaggerGen(c => {
+builder.Services.AddSwaggerGen(c =>
+{
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Restaunte",
         Version = "v1"
     });
+
 });
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+
     app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Restaurante V1");
+    });
+
 
 app.UseHttpsRedirection();
 app.UseCors();

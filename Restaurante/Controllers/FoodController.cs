@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Restaurante.Data;
+using Restaurante.Data.DTOs.Enum;
 using Restaurante.Data.DTOs.Food;
 using Restaurante.Model;
 
@@ -89,6 +90,7 @@ public class FoodController : ControllerBase
         filmeDto.RestaurantId = food.RestaurantId;
         filmeDto.Imagem = food.Imagem;
         filmeDto.Description = food.Description;
+        filmeDto.TagsDescription = ((TagsFood)food.TagsId).ToString();
         //var filmeDto = _mapper.Map<ReadFoodDto>(food);
         return Ok(filmeDto);
     }
